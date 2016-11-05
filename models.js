@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('YOUR DATABASE CONNECTION');
+const sequelize = new Sequelize('YOUR DATABASE');
 
 sequelize.authenticate()
 .then(() => console.log("Connected to db"))
@@ -32,23 +32,26 @@ const marco = Person.create({name: "marco"}) //marco is a promise
 
 /******************.hasOne*******************/
 Person.hasOne(Pet);
+Pet.belongsToMany(Company, {through: 'CompanyPet'})
+Pet.belongsToMany(Pet, {as: 'Sibling', through: 'Kitties'}) //renames Target model as Sibling
+sequelize.sync() //DON'T FORGET MEEEE
 
 Person.create({name: "daria"}).then(person => {
-  console.log("person: ", person)
   Pet.create({name: "frankie", type: "cat" }).then(pet => {
     person.setPet(pet)  //creates association between 'frankie' and 'daria'
   })
 })
 
-//You can do either
-// Person.findOne({where: {name: "daria"}, include: [Pet]}).then(person => console.log("pet: ", person))
+//To eager load a person with all of his pets, you can do either
+Person.findOne({where: {name: "daria"}, include: [Pet]}).then(person => console.log("person: ", person))
 //or Person.findOne({where: {name: "daria"}}).then(person => person.getPet())
 
 //Console logging the functions
-Person.findOne({where: {name: "daria"}}).then(person => {
-  console.log("setPet: ", person.setPet)
-  console.log("getPet: ", person.getPet)}
-);
+// Person.findOne({where: {name: "daria"}}).then(person => {
+//   console.log("setPet: ", person.setPet)
+//   console.log("getPet: ", person.getPet)
+//   }
+// );
 
 //.setPet
 /*function (associatedInstance, options) {
@@ -98,16 +101,21 @@ Person.findOne({where: {name: "daria"}}).then(person => {
   }
 */
 
-/******************.belongsToMany************************/
-Pet.belongsToMany(Company, {through: 'CompanyPet'})
 
+/******************.belongsToMany************************/
 Pet.findOne({where: {name: "frankie"}}).then(pet =>
   Company.create({name: 'Hack Reactor'}).then(company => {
     pet.setCompanies(company) //add association between frankie and Hack Reactor to CompanyPet
   })
 )
 
+Pet.findOne({where: {name: "frankie"}}).then(pet => {
+  Pet.create({name: "aiden"}).then(sibling => {
+    // console.log("pet.setSibling: ", pet.setSibling)
+    pet.addSibling(sibling)
+  })
+})
+Pet.findOne({include: {model: Pet, as:'Sibling'}}).then(pet => console.log("pet: ", pet))
 
-sequelize.sync() //DON'T FORGET MEEEE
 
 // console.log("sequelize: ", sequelize)
